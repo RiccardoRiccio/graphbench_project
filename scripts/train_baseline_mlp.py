@@ -54,7 +54,7 @@ def run(dataset_name):
     # ---- Config ----
    
     root          = "./graphbench_data"
-    epochs        = 2        # change to 700 for full run
+    epochs        = 700        # change to 700 for full run
     batch_size    = 512
     lr            = 1e-3
     hidden_dim    = 384
