@@ -1,5 +1,16 @@
+# --- Large Data ---
+graphbench_data/
 data/
+*.zip
+
+# --- Heavy Model Weights ---
+# This ignores all .pt files anywhere in your project
+*.pt
+# This is a specific safety net for your results folder structure
+results/**/*.pt
+
+# --- Python & Environment ---
 __pycache__/
 .conda/
-*.pt
-*.zip
+.env/
+*.pyc
