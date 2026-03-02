@@ -150,7 +150,7 @@ class Decoder(nn.Module):
         return self.w2(self.norm(F.gelu(self.w1(x))))
 
 
-class GTElectronicCircuits(nn.Module):
+class GT(nn.Module):
     """
     GraphBench-style GT baseline for Electronic Circuits.
 

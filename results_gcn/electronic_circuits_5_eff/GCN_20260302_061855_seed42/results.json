@@ -1,0 +1,23 @@
+{
+  "dataset": "electronic_circuits_5_eff",
+  "model": "GCN",
+  "seed": 42,
+  "epochs": 700,
+  "batch_size": 512,
+  "lr": 0.001,
+  "hidden_dim": 384,
+  "best_val_rse": 0.03662094101309776,
+  "test_rse": 0.03731466457247734,
+  "train_sizes": {
+    "original": 234093,
+    "after_filter": 234084,
+    "used": 73000
+  },
+  "removed_nan": {
+    "train": 9,
+    "valid": 0,
+    "test": 0
+  },
+  "duration_min": 57.96,
+  "pe_dim": 0
+}

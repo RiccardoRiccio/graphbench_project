@@ -106,5 +106,5 @@ class GIN(nn.Module):
 
         # Graph-level readout + decoder
         hg = global_mean_pool(h, batch)
-        out = self.decoder(hg)squeeze(-1)
+        out = self.decoder(hg).squeeze(-1)
         return out
