@@ -116,6 +116,6 @@ class GCN(nn.Module):
             h = layer(h, edge_index)
 
         hg = global_mean_pool(h, batch)
-        out = self.decoder(hg)
+        out = self.decoder(hg).squeeze(-1)
 
         return out
