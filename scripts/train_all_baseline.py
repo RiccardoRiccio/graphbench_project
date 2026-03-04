@@ -14,9 +14,10 @@ from models.baseline_gat import GAT
 from models.baseline_gcn import GCN
 from models.baseline_gin import GIN
 from models.baseline_gt import GT
-# from models.baseline_gtransformer import GTransformer
-# from models.baseline_gps import GPS
-
+from models.baseline_gtransformer import GTransformer
+from models.baseline_gps import GPS
+import random
+import numpy as np
 try:
     from torch_geometric.transforms import AddRandomWalkPE
     HAS_RWSE = True
@@ -29,7 +30,9 @@ except ImportError:
 RWSE_DIM = 16
 
 # ---- Reproducibility ----
-SEED = 42
+SEED = 1
+random.seed(SEED)
+np.random.seed(SEED)
 torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
 torch.cuda.manual_seed_all(SEED)
@@ -111,6 +114,30 @@ def build_model(model_key: str, input_dim: int, hidden_dim: int):
             out_dim=1,
             pe_dim=pe_dim,
         )
+    if model_key == "GPS":
+        if not HAS_RWSE:
+            raise RuntimeError("GPS baseline requires AddRandomWalkPE to create data.pe, but HAS_RWSE=False.")
+        pe_dim = RWSE_DIM
+        return GPS(
+            in_dim=input_dim,          # 9 for circuits
+            channels=hidden_dim,       # 384
+            pe_dim=pe_dim,             # 16
+            num_layers=6,              # choose 6 (or 10 like tutorial, but 6 is fine)
+            attn_type="multihead",
+            attn_kwargs={"dropout": 0.0},
+        )
+    
+    if model_key == "GTransformer":
+        # GT(in_channels=9, hidden_dim=384, num_layers=6, num_heads=4, out_dim=1, pe_dim=0)
+        pe_dim = RWSE_DIM if HAS_RWSE else 0
+        return GTransformer(
+            in_channels=input_dim,
+            hidden_dim=hidden_dim,
+            num_layers=6,
+            num_heads=4,
+            out_dim=1,
+            pe_dim=pe_dim,
+        )
 
     raise ValueError(f"Unknown model_key: {model_key}")
 def run(model_key: str, dataset_name: str):
@@ -125,7 +152,8 @@ def run(model_key: str, dataset_name: str):
     model_name = model_key
     # save_dir      = f"./results/{dataset_name}"
     timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_root = f"./results_{model_key.lower()}"
+    master_folder = f"./results_seed_{SEED}"
+    results_root = f"{master_folder}/results_{SEED}_{model_key.lower()}"
     save_dir = f"{results_root}/{dataset_name}/{model_key}_{timestamp}_seed{SEED}"
     os.makedirs(save_dir, exist_ok=True)
 
@@ -137,7 +165,7 @@ def run(model_key: str, dataset_name: str):
     splits = Loader.load()[0]
 
     pe_transform = None
-    if model_key == "GT" and HAS_RWSE:
+    if model_key in ["GT", "GPS", "GTransformer"] and HAS_RWSE:
         pe_transform = AddRandomWalkPE(walk_length=RWSE_DIM, attr_name="pe")
 
     train_ds = FilteredDataset(splits["train"], "train", transform=pe_transform)
@@ -234,7 +262,7 @@ def run(model_key: str, dataset_name: str):
         },
 
         "duration_min":  round(duration / 60, 2),
-        "pe_dim":        (RWSE_DIM if (model_key == "GT" and HAS_RWSE) else 0),
+        "pe_dim": (RWSE_DIM if (model_key in ["GT", "GPS", "GTransformer"] and HAS_RWSE) else 0),
     }
     with open(f"{save_dir}/results.json", "w") as f:
         json.dump(results, f, indent=2)
@@ -254,7 +282,7 @@ def main():
         "electronic_circuits_10_vout",
     ]
     
-    models = ["GT", "GCN", "GAT", "GIN"]
+    models = ["GT", "GCN", "GAT", "GIN", "GPS", "GTransformer"]
 
     for model_key in models:
         for dataset_name in datasets:

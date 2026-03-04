@@ -1,0 +1,23 @@
+{
+  "dataset": "electronic_circuits_10_vout",
+  "model": "GCN",
+  "seed": 1,
+  "epochs": 700,
+  "batch_size": 512,
+  "lr": 0.001,
+  "hidden_dim": 384,
+  "best_val_rse": 0.8702613711357117,
+  "test_rse": 0.8672845959663391,
+  "train_sizes": {
+    "original": 1389,
+    "after_filter": 1389,
+    "used": 1389
+  },
+  "removed_nan": {
+    "train": 0,
+    "valid": 0,
+    "test": 0
+  },
+  "duration_min": 1.1,
+  "pe_dim": 0
+}

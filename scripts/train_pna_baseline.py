@@ -7,16 +7,21 @@ import json
 import graphbench
 from datetime import datetime
 import time
-
+from torch_geometric.utils import degree
 
 
 from models.baseline_gat import GAT
 from models.baseline_gcn import GCN
 from models.baseline_gin import GIN
 from models.baseline_gt import GT
-# from models.baseline_gtransformer import GTransformer
-# from models.baseline_gps import GPS
+from models.baseline_gtransformer import GTransformer
+from models.baseline_gps import GPS
+from models.baseline_pna_graphdoc import PNAgraphdoc
+from models.baseline_pna_original import PNAOriginal
+from models.baseline_pnaresidual import PNAresidual
 
+import random
+import numpy as np
 try:
     from torch_geometric.transforms import AddRandomWalkPE
     HAS_RWSE = True
@@ -30,6 +35,8 @@ RWSE_DIM = 16
 
 # ---- Reproducibility ----
 SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
 torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
 torch.cuda.manual_seed_all(SEED)
@@ -83,7 +90,18 @@ def eval_rse(model, loader, evaluator, device):
     y_true = torch.cat(trues, dim=0)
     return evaluator.evaluate(y_pred=y_pred, y_true=y_true)
 
-def build_model(model_key: str, input_dim: int, hidden_dim: int):
+def compute_deg(dataset):
+    max_degree = -1
+    for data in dataset:
+        d = degree(data.edge_index[1], num_nodes=data.num_nodes, dtype=torch.long)
+        max_degree = max(max_degree, int(d.max()))
+    deg = torch.zeros(max_degree + 1, dtype=torch.long)
+    for data in dataset:
+        d = degree(data.edge_index[1], num_nodes=data.num_nodes, dtype=torch.long)
+        deg += torch.bincount(d, minlength=deg.numel())
+    return deg
+
+def build_model(model_key: str, input_dim: int, hidden_dim: int, deg=None):
     """
     Instantiate a model. Adjust kwargs if your class signatures differ.
     IMPORTANT: make sure each model returns shape [B], e.g. by .squeeze(-1) in forward().
@@ -111,21 +129,72 @@ def build_model(model_key: str, input_dim: int, hidden_dim: int):
             out_dim=1,
             pe_dim=pe_dim,
         )
+    if model_key == "GPS":
+        if not HAS_RWSE:
+            raise RuntimeError("GPS baseline requires AddRandomWalkPE to create data.pe, but HAS_RWSE=False.")
+        pe_dim = RWSE_DIM
+        return GPS(
+            in_dim=input_dim,          # 9 for circuits
+            channels=hidden_dim,       # 384
+            pe_dim=pe_dim,             # 16
+            num_layers=6,              # choose 6 (or 10 like tutorial, but 6 is fine)
+            attn_type="multihead",
+            attn_kwargs={"dropout": 0.0},
+        )
+    
+    if model_key == "GTransformer":
+        # GT(in_channels=9, hidden_dim=384, num_layers=6, num_heads=4, out_dim=1, pe_dim=0)
+        pe_dim = RWSE_DIM if HAS_RWSE else 0
+        return GTransformer(
+            in_channels=input_dim,
+            hidden_dim=hidden_dim,
+            num_layers=6,
+            num_heads=4,
+            out_dim=1,
+            pe_dim=pe_dim,
+        )
 
+    if model_key == "PNAgraphdoc":
+        if deg is None:
+            raise ValueError("PNA requires deg. Pass deg=compute_deg(train_ds).")
+        return PNAgraphdoc(
+            in_channels=input_dim,   # 9
+            hidden_dim=hidden_dim,   # 384
+            num_layers=4,
+            deg=deg,
+            out_dim=1,
+        )
+    if model_key == "PNAresidual":
+        if deg is None:
+            raise ValueError("PNA requires deg. Pass deg=compute_deg(train_ds).")
+        return PNAresidual(
+            in_channels=input_dim,   # 9
+            hidden_dim=hidden_dim,   # 384
+            num_layers=4,
+            deg=deg,
+            out_dim=1,
+        )
+    if model_key == "PNAOriginal":
+        if deg is None:
+            raise ValueError("PNAOriginal requires deg.")
+        return PNAOriginal(deg=deg)
+    
+    
     raise ValueError(f"Unknown model_key: {model_key}")
 def run(model_key: str, dataset_name: str):
     start_time = time.time()
     # ---- Config ----
    
     root          = "./graphbench_data"
-    epochs        = 700        # change to 700 for full run
+    epochs        = 30        # change to 700 for full run
     batch_size    = 512
     lr            = 1e-3
     hidden_dim    = 384
     model_name = model_key
     # save_dir      = f"./results/{dataset_name}"
     timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_root = f"./results_{model_key.lower()}"
+    # master_folder = f"./results_seed_{SEED}"
+    results_root = f"./results_{SEED}_{model_key.lower()}"
     save_dir = f"{results_root}/{dataset_name}/{model_key}_{timestamp}_seed{SEED}"
     os.makedirs(save_dir, exist_ok=True)
 
@@ -137,7 +206,7 @@ def run(model_key: str, dataset_name: str):
     splits = Loader.load()[0]
 
     pe_transform = None
-    if model_key == "GT" and HAS_RWSE:
+    if model_key in ["GT", "GPS", "GTransformer"] and HAS_RWSE:
         pe_transform = AddRandomWalkPE(walk_length=RWSE_DIM, attr_name="pe")
 
     train_ds = FilteredDataset(splits["train"], "train", transform=pe_transform)
@@ -162,7 +231,8 @@ def run(model_key: str, dataset_name: str):
     x         = sample.x.squeeze(1) if sample.x.dim() == 3 else sample.x
     input_dim = x.size(-1)
 
-    model = build_model(model_key=model_key, input_dim=input_dim, hidden_dim=hidden_dim).to(device)
+    deg = compute_deg(train_ds) if model_key in ["PNAgraphdoc", "PNAOriginal", "PNAresidual"] else None
+    model = build_model(model_key=model_key, input_dim=input_dim, hidden_dim=hidden_dim, deg=deg).to(device)
     opt   = Adam(model.parameters(), lr=lr)
     evaluator = graphbench.Evaluator("electroniccircuit")
 
@@ -234,7 +304,7 @@ def run(model_key: str, dataset_name: str):
         },
 
         "duration_min":  round(duration / 60, 2),
-        "pe_dim":        (RWSE_DIM if (model_key == "GT" and HAS_RWSE) else 0),
+        "pe_dim": (RWSE_DIM if (model_key in ["GT", "GPS", "GTransformer"] and HAS_RWSE) else 0),
     }
     with open(f"{save_dir}/results.json", "w") as f:
         json.dump(results, f, indent=2)
@@ -246,15 +316,15 @@ def main():
    
      # ---- Config ----
     datasets = [
-        "electronic_circuits_5_eff",
-        "electronic_circuits_5_vout",
+        # "electronic_circuits_5_eff",
+        # "electronic_circuits_5_vout",
         "electronic_circuits_7_eff",
         "electronic_circuits_7_vout",
         "electronic_circuits_10_eff",
         "electronic_circuits_10_vout",
     ]
     
-    models = ["GT", "GCN", "GAT", "GIN"]
+    models = ["PNAresidual", "PNAOriginal"]
 
     for model_key in models:
         for dataset_name in datasets:
