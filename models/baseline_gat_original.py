@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import GATConv, global_mean_pool
 
 
-class GATOriginal(nn.Module):
+class GAToriginal(nn.Module):
     def __init__(
         self,
         in_channels: int,
@@ -15,7 +15,7 @@ class GATOriginal(nn.Module):
         dropout: float = 0.0,
     ):
         super().__init__()
-        assert hidden_dim % heads == 0,
+        assert hidden_dim % heads == 0
         head_dim = hidden_dim // heads
 
         self.dropout = dropout

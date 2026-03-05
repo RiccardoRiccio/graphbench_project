@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, global_mean_pool
 
 
-class GCNOriginal(nn.Module):
+class GCNoriginal(nn.Module):
     """
     Original-style GCN adapted for GraphBench Electronic Circuits:
     - graph-level regression
