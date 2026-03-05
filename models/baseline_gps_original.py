@@ -3,10 +3,10 @@ import torch.nn as nn
 from typing import Any, Dict, Optional
 
 from torch.nn import Linear, ModuleList, Sequential, ReLU, BatchNorm1d
-from torch_geometric.nn import GPSConv, GINConv, global_mean_pool
+from torch_geometric.nn import GPSConv, GINConv, global_mean_pool, global_add_pool
 
-# I changed mean pool intead of add pool
-class GPS(nn.Module):
+
+class GPSoriginal(nn.Module):
     def __init__(
         self,
         in_dim: int,
@@ -65,5 +65,5 @@ class GPS(nn.Module):
         for conv in self.convs:
             x = conv(x, data.edge_index, batch=data.batch)
 
-        hg = global_mean_pool(x, data.batch)
+        hg = global_add_pool(x, data.batch)
         return self.mlp(hg).squeeze(-1)

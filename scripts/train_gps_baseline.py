@@ -15,6 +15,7 @@ import time
 # from models.baseline_gin import GIN
 # from models.baseline_gt import GT
 from models.baseline_gps import GPS
+from models.baseline_gps_original import GPSoriginal
 try:
     from torch_geometric.transforms import AddRandomWalkPE
     HAS_RWSE = True
@@ -122,6 +123,18 @@ def build_model(model_key: str, input_dim: int, hidden_dim: int):
             attn_type="multihead",
             attn_kwargs={"dropout": 0.0},
         )
+    if model_key == "GPSoriginal":
+        if not HAS_RWSE:
+            raise RuntimeError("GPS baseline requires AddRandomWalkPE to create data.pe, but HAS_RWSE=False.")
+        pe_dim = RWSE_DIM
+        return GPSoriginal(
+            in_dim=input_dim,          # 9 for circuits
+            channels=hidden_dim,       # 384
+            pe_dim=pe_dim,             # 16
+            num_layers=6,              # choose 6 (or 10 like tutorial, but 6 is fine)
+            attn_type="multihead",
+            attn_kwargs={"dropout": 0.0},
+        )
 
     raise ValueError(f"Unknown model_key: {model_key}")
 def run(model_key: str, dataset_name: str):
@@ -129,14 +142,14 @@ def run(model_key: str, dataset_name: str):
     # ---- Config ----
    
     root          = "./graphbench_data"
-    epochs        = 700        # change to 700 for full run
+    epochs        = 30        # change to 700 for full run
     batch_size    = 512
     lr            = 1e-3
     hidden_dim    = 384
     model_name = model_key
     # save_dir      = f"./results/{dataset_name}"
     timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_root = f"./results_{model_key.lower()}"
+    results_root = f"./results_{model_key.lower()}_addppool_30epochs"
     save_dir = f"{results_root}/{dataset_name}/{model_key}_{timestamp}_seed{SEED}"
     os.makedirs(save_dir, exist_ok=True)
 
@@ -148,7 +161,7 @@ def run(model_key: str, dataset_name: str):
     splits = Loader.load()[0]
 
     pe_transform = None
-    if model_key in ["GT", "GPS"] and HAS_RWSE:
+    if model_key in ["GT", "GPS", "GPSoriginal"] and HAS_RWSE:
         pe_transform = AddRandomWalkPE(walk_length=RWSE_DIM, attr_name="pe")
 
     train_ds = FilteredDataset(splits["train"], "train", transform=pe_transform)
@@ -245,7 +258,7 @@ def run(model_key: str, dataset_name: str):
         },
 
         "duration_min":  round(duration / 60, 2),
-        "pe_dim":        (RWSE_DIM if (model_key in ["GT", "GPS"] and HAS_RWSE) else 0)
+        "pe_dim":        (RWSE_DIM if (model_key in ["GT", "GPS", "GPSoriginal"] and HAS_RWSE) else 0)
     }
     with open(f"{save_dir}/results.json", "w") as f:
         json.dump(results, f, indent=2)
@@ -258,14 +271,14 @@ def main():
      # ---- Config ----
     datasets = [
         "electronic_circuits_5_eff",
-        "electronic_circuits_5_vout",
+        # "electronic_circuits_5_vout",
         "electronic_circuits_7_eff",
-        "electronic_circuits_7_vout",
+        # "electronic_circuits_7_vout",
         "electronic_circuits_10_eff",
-        "electronic_circuits_10_vout",
+        # "electronic_circuits_10_vout",
     ]
     
-    models = ["GPS"]
+    models = ["GPSoriginal"]
 
     for model_key in models:
         for dataset_name in datasets:

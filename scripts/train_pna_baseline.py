@@ -19,6 +19,7 @@ from models.baseline_gps import GPS
 from models.baseline_pna_graphdoc import PNAgraphdoc
 from models.baseline_pna_original import PNAOriginal
 from models.baseline_pnaresidual import PNAresidual
+from models.baseline_pna_decoder import PNAdecoder
 
 import random
 import numpy as np
@@ -142,6 +143,7 @@ def build_model(model_key: str, input_dim: int, hidden_dim: int, deg=None):
             attn_kwargs={"dropout": 0.0},
         )
     
+    
     if model_key == "GTransformer":
         # GT(in_channels=9, hidden_dim=384, num_layers=6, num_heads=4, out_dim=1, pe_dim=0)
         pe_dim = RWSE_DIM if HAS_RWSE else 0
@@ -178,6 +180,13 @@ def build_model(model_key: str, input_dim: int, hidden_dim: int, deg=None):
         if deg is None:
             raise ValueError("PNAOriginal requires deg.")
         return PNAOriginal(deg=deg)
+    
+    if model_key == "PNAdecoder":
+        if deg is None:
+            raise ValueError("PNAdecoder requires deg.")
+        return PNAdecoder(deg=deg)
+    
+    
     
     
     raise ValueError(f"Unknown model_key: {model_key}")
@@ -231,7 +240,7 @@ def run(model_key: str, dataset_name: str):
     x         = sample.x.squeeze(1) if sample.x.dim() == 3 else sample.x
     input_dim = x.size(-1)
 
-    deg = compute_deg(train_ds) if model_key in ["PNAgraphdoc", "PNAOriginal", "PNAresidual"] else None
+    deg = compute_deg(train_ds) if model_key in ["PNAgraphdoc", "PNAOriginal", "PNAresidual", "PNAdecoder"] else None
     model = build_model(model_key=model_key, input_dim=input_dim, hidden_dim=hidden_dim, deg=deg).to(device)
     opt   = Adam(model.parameters(), lr=lr)
     evaluator = graphbench.Evaluator("electroniccircuit")
@@ -316,15 +325,15 @@ def main():
    
      # ---- Config ----
     datasets = [
-        # "electronic_circuits_5_eff",
+        "electronic_circuits_5_eff",
         # "electronic_circuits_5_vout",
         "electronic_circuits_7_eff",
-        "electronic_circuits_7_vout",
-        "electronic_circuits_10_eff",
-        "electronic_circuits_10_vout",
+        # "electronic_circuits_7_vout",
+        # "electronic_circuits_10_eff",
+        # "electronic_circuits_10_vout",
     ]
     
-    models = ["PNAresidual", "PNAOriginal"]
+    models = ["PNAOriginal"]
 
     for model_key in models:
         for dataset_name in datasets:
