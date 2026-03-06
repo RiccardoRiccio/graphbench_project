@@ -268,7 +268,7 @@ def run(model_key: str, dataset_name: str, seed: int):
     start_time = time.time()
     # ---- Config ----
    
-    root          = "./graphbench_data_copy"
+    root          = "./graphbench_data_copy_2"
     epochs        = 700        # change to 700 for full run
     batch_size    = 512
     lr            = 1e-3
@@ -276,7 +276,7 @@ def run(model_key: str, dataset_name: str, seed: int):
     model_name = model_key
     # save_dir      = f"./results/{dataset_name}"
     timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
-    master_folder = "./results_all_3seed_small"
+    master_folder = "./results_all_3seed_small_original"
     seed_root = f"{master_folder}/result_all_seed_{seed}"
     results_root = f"{seed_root}/{model_key.lower()}"
     save_dir = f"{results_root}/{dataset_name}/{model_key}_{timestamp}_seed{seed}"
@@ -411,23 +411,23 @@ def main():
     
     models = [
         
-        "GATGraphBench",
-        "GCNGraphBench",
-        "GINGraphBench",
-        "GTGraphBench",
-        "PNAGraphBench",
-        "GPSGraphBench",
-        "MLPGraphBench",
-        # "GAToriginal",
-        # "GCNoriginal", 
-        # "GINoriginal",
-        # "PNAOriginal", 
-        # "GPSoriginal",  
-        # "BaselineMLP", 
+        # "GATGraphBench",
+        # "GCNGraphBench",
+        # "GINGraphBench",
+        # "GTGraphBench",
+        # "PNAGraphBench",
+        # "GPSGraphBench",
+        # "MLPGraphBench",
+        "GAToriginal",
+        "GCNoriginal", 
+        "GINoriginal",
+        "PNAOriginal", 
+        "GPSoriginal",  
+        "BaselineMLP", 
 
     ]
 
-    seeds = [2, 42]
+    seeds = [1, 2, 42]
 
     for seed in seeds:
         for model_key in models:

@@ -1,0 +1,23 @@
+{
+  "dataset": "electronic_circuits_5_vout",
+  "model": "GTGraphBench",
+  "seed": 1,
+  "epochs": 700,
+  "batch_size": 512,
+  "lr": 0.001,
+  "hidden_dim": 384,
+  "best_val_rse": 0.7188573479652405,
+  "test_rse": 0.7196279764175415,
+  "train_sizes": {
+    "original": 234093,
+    "after_filter": 234093,
+    "used": 1000
+  },
+  "removed_nan": {
+    "train": 0,
+    "valid": 0,
+    "test": 0
+  },
+  "duration_min": 29.6,
+  "pe_dim": 16
+}
