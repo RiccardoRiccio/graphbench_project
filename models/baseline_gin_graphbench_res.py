@@ -58,7 +58,7 @@ class GINEPhi(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
         )
-        self.gine = GINEConv(nn=gine_nn, train_eps=train_eps, edge_dim=None)
+        self.gine = GINEConv(nn=gine_nn, train_eps=train_eps, edge_dim=hidden_dim)
 
         # "output ... forwarded to a two-layer MLP"
         self.post_mlp = nn.Sequential(
@@ -109,6 +109,8 @@ class GINGraphBench(nn.Module):
     ):
         super().__init__()
         self.encoder = nn.Linear(in_channels, hidden_dim)
+        self.missing_edge_attr = nn.Parameter(torch.zeros(hidden_dim))
+      
 
         self.processor = nn.ModuleList([
             GraphBenchProcessorLayer(hidden_dim, phi=GINEPhi(hidden_dim, train_eps=train_eps))
@@ -135,7 +137,8 @@ class GINGraphBench(nn.Module):
         h = self.encoder(x)
 
         # No edge features for circuits
-        edge_attr = None
+        num_edges = data.edge_index.size(1)
+        edge_attr = self.missing_edge_attr.unsqueeze(0).expand(num_edges, -1)
 
         # Processor stack
         for layer in self.processor:

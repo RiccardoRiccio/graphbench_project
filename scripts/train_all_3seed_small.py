@@ -23,7 +23,7 @@ from models.baseline_gin_original import GINoriginal
 # from models.baseline_gt_original import GToriginal
 from models.baseline_gcn_original import GCNoriginal
 from models.baseline_gat_original import GAToriginal
-from models.baseline_mlp_original import MLPoriginal
+from models.baseline_mlp import BaselineMLP
 
 from models.baseline_gcn_graphbench_res import GCNGraphBench
 from models.baseline_gin_graphbench_res import GINGraphBench
@@ -124,8 +124,8 @@ def build_model(model_key: str, input_dim: int, hidden_dim: int, deg=None):
     Instantiate a model. Adjust kwargs if your class signatures differ.
     IMPORTANT: make sure each model returns shape [B], e.g. by .squeeze(-1) in forward().
     """
-    if model_key == "MLPoriginal":
-        return MLPoriginal(
+    if model_key == "BaselineMLP":
+        return BaselineMLP(
             input_dim=input_dim,
             hidden_dim=hidden_dim,
             out_channels=1,
@@ -402,11 +402,11 @@ def main():
    
      # ---- Config ----
     datasets = [
-        "electronic_circuits_5_eff",
-        "electronic_circuits_5_vout",
-        "electronic_circuits_7_eff",
-        "electronic_circuits_7_vout",
-        "electronic_circuits_10_eff",
+        # "electronic_circuits_5_eff",
+        # "electronic_circuits_5_vout",
+        # "electronic_circuits_7_eff",
+        # "electronic_circuits_7_vout",
+        # "electronic_circuits_10_eff",
         "electronic_circuits_10_vout",
     ]
     
@@ -421,7 +421,7 @@ def main():
         "MLPGraphBench",
         "GAToriginal",
         "GCNoriginal",
-        "MLPoriginal",  
+        "BaselineMLP",  
         "GPSoriginal",
         "PNAOriginal",   
         "GINoriginal",
