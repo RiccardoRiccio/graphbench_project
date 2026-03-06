@@ -1,0 +1,22 @@
+{
+  "dataset": "electronic_circuits_7_vout",
+  "model": "BaselineMLP",
+  "seed": 42,
+  "epochs": 700,
+  "batch_size": 512,
+  "lr": 0.001,
+  "hidden_dim": 384,
+  "best_val_rse": 0.8525360822677612,
+  "test_rse": 0.898945689201355,
+  "train_sizes": {
+    "original": 907,
+    "after_filter": 907,
+    "used": 907
+  },
+  "removed_nan": {
+    "train": 0,
+    "valid": 0,
+    "test": 0
+  },
+  "duration_min": 0.45
+}

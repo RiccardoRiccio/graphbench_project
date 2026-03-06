@@ -20,9 +20,19 @@ from torch_geometric.utils import degree
 from models.baseline_pna_original import PNAOriginal
 from models.baseline_gps_original import GPSoriginal
 from models.baseline_gin_original import GINoriginal
-from models.baseline_gt_original import GToriginal
-from models.baseline_gat_original import GAToriginal
+# from models.baseline_gt_original import GToriginal
 from models.baseline_gcn_original import GCNoriginal
+from models.baseline_gat_original import GAToriginal
+from models.baseline_mlp_original import MLPoriginal
+
+from models.baseline_gcn_graphbench_res import GCNGraphBench
+from models.baseline_gin_graphbench_res import GINGraphBench
+from models.baseline_gt_graphbench_res import GTGraphBench
+from models.baseline_gat_graphbench_res import GATGraphBench
+from models.baseline_gps_graphbench_res import GPSGraphBench
+from models.baseline_pna_graphbench_res import PNAGraphBench
+from models.baseline_mlp_graphbench_res import MLPGraphBench    
+# from models.baseline_gcn_original import GCNoriginal
 
 # from models.baseline_pnaresidual import PNAresidual
 # from models.baseline_pna_decoder import PNAdecoder
@@ -41,13 +51,14 @@ except ImportError:
 RWSE_DIM = 16
 
 # ---- Reproducibility ----
-SEED = 42
-random.seed(SEED)
-np.random.seed(SEED)
-torch.manual_seed(SEED)
-torch.cuda.manual_seed(SEED)
-torch.cuda.manual_seed_all(SEED)
-
+# ---- Reproducibility ----
+def set_seed(seed: int):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
 
 
 class FilteredDataset(torch.utils.data.Dataset):
@@ -113,6 +124,12 @@ def build_model(model_key: str, input_dim: int, hidden_dim: int, deg=None):
     Instantiate a model. Adjust kwargs if your class signatures differ.
     IMPORTANT: make sure each model returns shape [B], e.g. by .squeeze(-1) in forward().
     """
+    if model_key == "MLPoriginal":
+        return MLPoriginal(
+            input_dim=input_dim,
+            hidden_dim=hidden_dim,
+            out_channels=1,
+        )
     if model_key == "GAToriginal":
         return GAToriginal(
             in_channels=input_dim,
@@ -141,17 +158,17 @@ def build_model(model_key: str, input_dim: int, hidden_dim: int, deg=None):
             train_eps=False,
         )
 
-    if model_key == "GToriginal":
-        pe_dim = RWSE_DIM if HAS_RWSE else 0
-        return GToriginal(
-            in_channels=input_dim,
-            hidden_dim=hidden_dim,
-            num_layers=6,
-            num_heads=4,
-            out_dim=1,
-            pe_dim=pe_dim,
-            dropout=0.0,
-        )
+    # if model_key == "GToriginal":
+    #     pe_dim = RWSE_DIM if HAS_RWSE else 0
+    #     return GToriginal(
+    #         in_channels=input_dim,
+    #         hidden_dim=hidden_dim,
+    #         num_layers=6,
+    #         num_heads=4,
+    #         out_dim=1,
+    #         pe_dim=pe_dim,
+    #         dropout=0.0,
+    #     )
 
     if model_key == "GPSoriginal":
         if not HAS_RWSE:
@@ -171,13 +188,84 @@ def build_model(model_key: str, input_dim: int, hidden_dim: int, deg=None):
             raise ValueError("PNAOriginal requires deg.")
         return PNAOriginal(deg=deg)
     
+    ## GRAPH BENCH MODELS
+    
+    if model_key == "GATGraphBench":
+        return GATGraphBench(
+            in_channels=input_dim,
+            hidden_dim=hidden_dim,
+            num_layers=4,
+            heads=4,
+            out_dim=1,
+            dropout=0.0,
+        )
+
+    if model_key == "GCNGraphBench":
+        return GCNGraphBench(
+            in_channels=input_dim,
+            hidden_dim=hidden_dim,
+            num_layers=4,
+            out_dim=1,
+            dropout=0.0,
+        )
+
+    if model_key == "GINGraphBench":
+        return GINGraphBench(
+            in_channels=input_dim,
+            hidden_dim=hidden_dim,
+            num_layers=4,
+            out_dim=1,
+            train_eps=False,
+        )
+
+    if model_key == "GTGraphBench":
+        pe_dim = RWSE_DIM if HAS_RWSE else 0
+        return GTGraphBench(
+            in_channels=input_dim,
+            hidden_dim=hidden_dim,
+            num_layers=6,
+            num_heads=4,
+            out_dim=1,
+            pe_dim=pe_dim,
+            dropout=0.0,
+        )
+
+    if model_key == "GPSGraphBench":
+        if not HAS_RWSE:
+            raise RuntimeError("GPSGraphBench requires AddRandomWalkPE (data.pe), but HAS_RWSE=False.")
+        return GPSGraphBench(
+            in_dim=input_dim,
+            channels=hidden_dim,
+            pe_dim=RWSE_DIM,
+            num_layers=6,
+            out_dim=1,
+            attn_type="multihead",
+            attn_kwargs={"dropout": 0.0},
+        )
+
+    if model_key == "PNAGraphBench":
+        if deg is None:
+            raise ValueError("PNAGraphBench requires deg.")
+        return PNAGraphBench(deg=deg)
+
+    if model_key == "MLPGraphBench":
+        return MLPGraphBench(
+            input_dim=input_dim,
+            hidden_dim=hidden_dim,
+            num_layers=4,
+            out_dim=1,
+        )
+    
+
+    
     
     
     
     
     
     raise ValueError(f"Unknown model_key: {model_key}")
-def run(model_key: str, dataset_name: str):
+def run(model_key: str, dataset_name: str, seed: int):
+    set_seed(seed)
     start_time = time.time()
     # ---- Config ----
    
@@ -189,9 +277,10 @@ def run(model_key: str, dataset_name: str):
     model_name = model_key
     # save_dir      = f"./results/{dataset_name}"
     timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
-    master_folder = f"./results_seed_{SEED}_all_originals"
-    results_root = f"{master_folder}/results_{SEED}_{model_key.lower()}"
-    save_dir = f"{results_root}/{dataset_name}/{model_key}_{timestamp}_seed{SEED}"
+    master_folder = "./results_all_3seed_small"
+    seed_root = f"{master_folder}/result_all_seed_{seed}"
+    results_root = f"{seed_root}/{model_key.lower()}"
+    save_dir = f"{results_root}/{dataset_name}/{model_key}_{timestamp}_seed{seed}"
     os.makedirs(save_dir, exist_ok=True)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -202,15 +291,16 @@ def run(model_key: str, dataset_name: str):
     splits = Loader.load()[0]
 
     pe_transform = None
-    if model_key in ["GToriginal", "GPSoriginal"] and HAS_RWSE:
+    if model_key in ["GToriginal", "GPSoriginal", "GTGraphBench", "GPSGraphBench"] and HAS_RWSE:
         pe_transform = AddRandomWalkPE(walk_length=RWSE_DIM, attr_name="pe")
 
     train_ds = FilteredDataset(splits["train"], "train", transform=pe_transform)
     train_bad = train_ds.bad
     # FILTER ONLY 73K FOR THE 5_EFF DATASET
-    if "5_" in dataset_name and len(train_ds) > 73000:
-        rng = torch.Generator().manual_seed(SEED)
-        indices = torch.randperm(len(train_ds), generator=rng)[:73000].tolist()
+    # FILTER ONLY 1K FOR THE 5-component datasets
+    if dataset_name in ["electronic_circuits_5_eff", "electronic_circuits_5_vout"] and len(train_ds) > 1000:
+        rng = torch.Generator().manual_seed(seed)
+        indices = torch.randperm(len(train_ds), generator=rng)[:1000].tolist()
         train_ds = torch.utils.data.Subset(train_ds, indices)
         print(f"  subsampled train to {len(train_ds)} samples")
 
@@ -227,7 +317,7 @@ def run(model_key: str, dataset_name: str):
     x         = sample.x.squeeze(1) if sample.x.dim() == 3 else sample.x
     input_dim = x.size(-1)
 
-    deg = compute_deg(train_ds) if model_key in ["PNAOriginal"] else None
+    deg = compute_deg(train_ds) if model_key in ["PNAOriginal", "PNAGraphBench"] else None
     model = build_model(model_key=model_key, input_dim=input_dim, hidden_dim=hidden_dim, deg=deg).to(device)
     opt   = Adam(model.parameters(), lr=lr)
     evaluator = graphbench.Evaluator("electroniccircuit")
@@ -281,7 +371,7 @@ def run(model_key: str, dataset_name: str):
     results = {
         "dataset":       dataset_name,
         "model":         model_name,
-        "seed":          SEED,
+        "seed":          seed,
         "epochs":        epochs,
         "batch_size":    batch_size,
         "lr":            lr,
@@ -300,7 +390,7 @@ def run(model_key: str, dataset_name: str):
         },
 
         "duration_min":  round(duration / 60, 2),
-        "pe_dim": (RWSE_DIM if (model_key in ["GToriginal", "GPSoriginal"] and HAS_RWSE) else 0),
+        "pe_dim": (RWSE_DIM if (model_key in ["GToriginal", "GPSoriginal", "GTGraphBench", "GPSGraphBench"] and HAS_RWSE) else 0),
     }
     with open(f"{save_dir}/results.json", "w") as f:
         json.dump(results, f, indent=2)
@@ -320,14 +410,32 @@ def main():
         "electronic_circuits_10_vout",
     ]
     
-    models = ["PNAOriginal", "GPSoriginal", "GCNoriginal", "GINoriginal", "GAToriginal", "GToriginal"]
+    models = [
+        
+        "GATGraphBench",
+        "GCNGraphBench",
+        "GINGraphBench",
+        "GTGraphBench",
+        "PNAGraphBench",
+        "GPSGraphBench",
+        "MLPGraphBench",
+        "GAToriginal",
+        "GCNoriginal",
+        "MLPoriginal",  
+        "GPSoriginal",
+        "PNAOriginal",   
+        "GINoriginal",
+    ]
 
-    for model_key in models:
-        for dataset_name in datasets:
-            print(f"\n{'='*80}")
-            print(f"Training model={model_key} on dataset={dataset_name}")
-            print(f"{'='*80}")
-            run(model_key=model_key, dataset_name=dataset_name)
+    seeds = [1, 2, 42]
+
+    for seed in seeds:
+        for model_key in models:
+            for dataset_name in datasets:
+                print(f"\n{'='*80}")
+                print(f"Training model={model_key} on dataset={dataset_name} with seed={seed}")
+                print(f"{'='*80}")
+                run(model_key=model_key, dataset_name=dataset_name, seed=seed)
 
 
     

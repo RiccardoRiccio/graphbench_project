@@ -9,12 +9,17 @@ from datetime import datetime
 import time
 
 from models.baseline_mlp import BaselineMLP
+import random
+import numpy as np
+
 
 
 # ---- Reproducibility ----
 SEED = 42
 torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
+random.seed(SEED)
+np.random.seed(SEED)
 
 class FilteredDataset(torch.utils.data.Dataset):
     def __init__(self, base_ds, name="ds"):
@@ -176,11 +181,12 @@ def run(dataset_name):
 def main():
      # ---- Config ----
     datasets = [
-        "electronic_circuits_5_eff",
-        "electronic_circuits_5_vout",
-        "electronic_circuits_7_eff",
-        "electronic_circuits_10_eff",
-        "electronic_circuits_10_vout",
+        # "electronic_circuits_5_eff",
+        # "electronic_circuits_5_vout",
+        # "electronic_circuits_7_eff",
+        "electronic_circuits_7_vout",
+        # "electronic_circuits_10_eff",
+        # "electronic_circuits_10_vout",
     ]
     
     for dataset_name in datasets:

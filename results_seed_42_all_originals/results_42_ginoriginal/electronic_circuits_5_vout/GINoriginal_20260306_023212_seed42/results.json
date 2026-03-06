@@ -1,0 +1,23 @@
+{
+  "dataset": "electronic_circuits_5_vout",
+  "model": "GINoriginal",
+  "seed": 42,
+  "epochs": 700,
+  "batch_size": 512,
+  "lr": 0.001,
+  "hidden_dim": 384,
+  "best_val_rse": 0.06259791553020477,
+  "test_rse": 0.06584113836288452,
+  "train_sizes": {
+    "original": 234093,
+    "after_filter": 234093,
+    "used": 73000
+  },
+  "removed_nan": {
+    "train": 0,
+    "valid": 0,
+    "test": 0
+  },
+  "duration_min": 60.55,
+  "pe_dim": 0
+}

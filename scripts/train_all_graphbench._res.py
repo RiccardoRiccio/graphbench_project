@@ -17,12 +17,19 @@ from torch_geometric.utils import degree
 # from models.baseline_gtransformer import GTransformer
 # from models.baseline_gps import GPS
 # from models.baseline_pna_graphdoc import PNAgraphdoc
-from models.baseline_pna_original import PNAOriginal
-from models.baseline_gps_original import GPSoriginal
-from models.baseline_gin_original import GINoriginal
-from models.baseline_gt_original import GToriginal
+# from models.baseline_pna_original import PNAOriginal
+# from models.baseline_gps_original import GPSoriginal
+# from models.baseline_gin_original import GINoriginal
+# from models.baseline_gt_original import GToriginal
 from models.baseline_gat_original import GAToriginal
-from models.baseline_gcn_original import GCNoriginal
+from models.baseline_gcn_graphbench_res import GCNGraphBench
+from models.baseline_gin_graphbench_res import GINGraphBench
+from models.baseline_gt_graphbench_res import GTGraphBench
+from models.baseline_gat_graphbench_res import GATGraphBench
+from models.baseline_gps_graphbench_res import GPSGraphBench
+from models.baseline_pna_graphbench_res import PNAGraphBench
+from models.baseline_mlp_graphbench_res import MLPGraphBench    
+# from models.baseline_gcn_original import GCNoriginal
 
 # from models.baseline_pnaresidual import PNAresidual
 # from models.baseline_pna_decoder import PNAdecoder
@@ -123,8 +130,68 @@ def build_model(model_key: str, input_dim: int, hidden_dim: int, deg=None):
             dropout=0.0,
         )
 
-    if model_key == "GCNoriginal":
-        return GCNoriginal(
+    # if model_key == "GCNoriginal":
+    #     return GCNoriginal(
+    #         in_channels=input_dim,
+    #         hidden_dim=hidden_dim,
+    #         num_layers=4,
+    #         out_dim=1,
+    #         dropout=0.0,
+    #     )
+
+    # if model_key == "GINoriginal":
+    #     return GINoriginal(
+    #         in_channels=input_dim,
+    #         hidden_dim=hidden_dim,
+    #         num_layers=4,
+    #         out_dim=1,
+    #         train_eps=False,
+    #     )
+
+    # if model_key == "GToriginal":
+    #     pe_dim = RWSE_DIM if HAS_RWSE else 0
+    #     return GToriginal(
+    #         in_channels=input_dim,
+    #         hidden_dim=hidden_dim,
+    #         num_layers=6,
+    #         num_heads=4,
+    #         out_dim=1,
+    #         pe_dim=pe_dim,
+    #         dropout=0.0,
+    #     )
+
+    # if model_key == "GPSoriginal":
+    #     if not HAS_RWSE:
+    #         raise RuntimeError("GPSoriginal requires AddRandomWalkPE (data.pe), but HAS_RWSE=False.")
+    #     return GPSoriginal(
+    #         in_dim=input_dim,
+    #         channels=hidden_dim,
+    #         pe_dim=RWSE_DIM,
+    #         num_layers=6,
+    #         attn_type="multihead",
+    #         attn_kwargs={"dropout": 0.0},
+    #     )
+    
+        
+    # if model_key == "PNAOriginal":
+    #     if deg is None:
+    #         raise ValueError("PNAOriginal requires deg.")
+    #     return PNAOriginal(deg=deg)
+    
+    ## GRAPH BENCH MODELS
+    
+    if model_key == "GATGraphBench":
+        return GATGraphBench(
+            in_channels=input_dim,
+            hidden_dim=hidden_dim,
+            num_layers=4,
+            heads=4,
+            out_dim=1,
+            dropout=0.0,
+        )
+
+    if model_key == "GCNGraphBench":
+        return GCNGraphBench(
             in_channels=input_dim,
             hidden_dim=hidden_dim,
             num_layers=4,
@@ -132,8 +199,8 @@ def build_model(model_key: str, input_dim: int, hidden_dim: int, deg=None):
             dropout=0.0,
         )
 
-    if model_key == "GINoriginal":
-        return GINoriginal(
+    if model_key == "GINGraphBench":
+        return GINGraphBench(
             in_channels=input_dim,
             hidden_dim=hidden_dim,
             num_layers=4,
@@ -141,9 +208,9 @@ def build_model(model_key: str, input_dim: int, hidden_dim: int, deg=None):
             train_eps=False,
         )
 
-    if model_key == "GToriginal":
+    if model_key == "GTGraphBench":
         pe_dim = RWSE_DIM if HAS_RWSE else 0
-        return GToriginal(
+        return GTGraphBench(
             in_channels=input_dim,
             hidden_dim=hidden_dim,
             num_layers=6,
@@ -153,23 +220,33 @@ def build_model(model_key: str, input_dim: int, hidden_dim: int, deg=None):
             dropout=0.0,
         )
 
-    if model_key == "GPSoriginal":
+    if model_key == "GPSGraphBench":
         if not HAS_RWSE:
-            raise RuntimeError("GPSoriginal requires AddRandomWalkPE (data.pe), but HAS_RWSE=False.")
-        return GPSoriginal(
+            raise RuntimeError("GPSGraphBench requires AddRandomWalkPE (data.pe), but HAS_RWSE=False.")
+        return GPSGraphBench(
             in_dim=input_dim,
             channels=hidden_dim,
             pe_dim=RWSE_DIM,
             num_layers=6,
+            out_dim=1,
             attn_type="multihead",
             attn_kwargs={"dropout": 0.0},
         )
-    
-        
-    if model_key == "PNAOriginal":
+
+    if model_key == "PNAGraphBench":
         if deg is None:
-            raise ValueError("PNAOriginal requires deg.")
-        return PNAOriginal(deg=deg)
+            raise ValueError("PNAGraphBench requires deg.")
+        return PNAGraphBench(deg=deg)
+
+    if model_key == "MLPGraphBench":
+        return MLPGraphBench(
+            input_dim=input_dim,
+            hidden_dim=hidden_dim,
+            num_layers=4,
+            out_dim=1,
+        )
+    
+
     
     
     
@@ -189,7 +266,7 @@ def run(model_key: str, dataset_name: str):
     model_name = model_key
     # save_dir      = f"./results/{dataset_name}"
     timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
-    master_folder = f"./results_seed_{SEED}_all_originals"
+    master_folder = f"./results_seed_{SEED}_all_graphbench_res_and_gatoriginal"
     results_root = f"{master_folder}/results_{SEED}_{model_key.lower()}"
     save_dir = f"{results_root}/{dataset_name}/{model_key}_{timestamp}_seed{SEED}"
     os.makedirs(save_dir, exist_ok=True)
@@ -202,7 +279,7 @@ def run(model_key: str, dataset_name: str):
     splits = Loader.load()[0]
 
     pe_transform = None
-    if model_key in ["GToriginal", "GPSoriginal"] and HAS_RWSE:
+    if model_key in ["GToriginal", "GPSoriginal", "GTGraphBench", "GPSGraphBench"] and HAS_RWSE:
         pe_transform = AddRandomWalkPE(walk_length=RWSE_DIM, attr_name="pe")
 
     train_ds = FilteredDataset(splits["train"], "train", transform=pe_transform)
@@ -227,7 +304,7 @@ def run(model_key: str, dataset_name: str):
     x         = sample.x.squeeze(1) if sample.x.dim() == 3 else sample.x
     input_dim = x.size(-1)
 
-    deg = compute_deg(train_ds) if model_key in ["PNAOriginal"] else None
+    deg = compute_deg(train_ds) if model_key in ["PNAOriginal", "PNAGraphBench"] else None
     model = build_model(model_key=model_key, input_dim=input_dim, hidden_dim=hidden_dim, deg=deg).to(device)
     opt   = Adam(model.parameters(), lr=lr)
     evaluator = graphbench.Evaluator("electroniccircuit")
@@ -300,7 +377,7 @@ def run(model_key: str, dataset_name: str):
         },
 
         "duration_min":  round(duration / 60, 2),
-        "pe_dim": (RWSE_DIM if (model_key in ["GToriginal", "GPSoriginal"] and HAS_RWSE) else 0),
+        "pe_dim": (RWSE_DIM if (model_key in ["GToriginal", "GPSoriginal", "GTGraphBench", "GPSGraphBench"] and HAS_RWSE) else 0),
     }
     with open(f"{save_dir}/results.json", "w") as f:
         json.dump(results, f, indent=2)
@@ -320,7 +397,16 @@ def main():
         "electronic_circuits_10_vout",
     ]
     
-    models = ["PNAOriginal", "GPSoriginal", "GCNoriginal", "GINoriginal", "GAToriginal", "GToriginal"]
+    models = [
+        "GAToriginal",
+        "GATGraphBench",
+        "GCNGraphBench",
+        "GINGraphBench",
+        "GTGraphBench",
+        "PNAGraphBench",
+        "GPSGraphBench",
+        "MLPGraphBench",
+    ]
 
     for model_key in models:
         for dataset_name in datasets:

@@ -97,7 +97,7 @@ class GraphBenchProcessorLayer(nn.Module):
 # Full GraphBench GIN baseline for graph-level regression (electronic circuits)
 # Encoder -> Processor(L layers) -> mean pool -> Decoder
 # -------------------------
-class GraphBenchGIN(nn.Module):
+class GINGraphBench(nn.Module):
     def __init__(
         self,
         in_channels: int,
