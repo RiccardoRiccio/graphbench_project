@@ -181,12 +181,12 @@ def run(dataset_name):
 def main():
      # ---- Config ----
     datasets = [
-        # "electronic_circuits_5_eff",
-        # "electronic_circuits_5_vout",
-        # "electronic_circuits_7_eff",
+        "electronic_circuits_5_eff",
+        "electronic_circuits_5_vout",
+        "electronic_circuits_7_eff",
         "electronic_circuits_7_vout",
-        # "electronic_circuits_10_eff",
-        # "electronic_circuits_10_vout",
+        "electronic_circuits_10_eff",
+        "electronic_circuits_10_vout",
     ]
     
     for dataset_name in datasets:

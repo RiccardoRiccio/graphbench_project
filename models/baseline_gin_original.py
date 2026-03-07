@@ -59,7 +59,7 @@ class GINoriginal(nn.Module):
 
         h = self.encoder(x)
 
-        # build placeholder edge_attr
+     
         num_edges = edge_index.size(1)
         edge_attr = self.missing_edge_attr.unsqueeze(0).expand(num_edges, -1)
 

@@ -1,17 +1,3 @@
-# models/gt_original.py
-# Standalone (unwrapped) Graph Transformer baseline for GraphBench electronic circuits
-# Paper-aligned choices for circuits:
-# - hidden_dim = 384
-# - num_layers = 6
-# - num_heads = 4
-# - activation = GELU
-# - dropout = 0
-# - graph-level readout via [cls] token
-# - optional absolute PE added before first GT layer (RWSE if provided)
-#
-# Note: The paper describes an additive attention bias B. GraphBench follows Bechler-Speicher et al. (2025),
-# but the exact B construction is not fully specified in the excerpt. This implementation provides a
-# reasonable "biased attention" mechanism using PE-derived per-head additive bias when pe_dim > 0.
 
 import math
 import torch

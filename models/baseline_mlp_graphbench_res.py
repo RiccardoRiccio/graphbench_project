@@ -64,7 +64,7 @@ class NodeWiseMLP(nn.Module):
 # One processor layer (Eq. 3 block)
 # 1) h = φ(LayerNorm(x), G) ; x = x + h
 # 2) x = x + FNN(x)
-# For MLP baseline, φ ignores graph structure, so edge_index is unused.
+
 # -------------------------
 class GraphBenchProcessorLayer(nn.Module):
     def __init__(self, hidden_dim: int, phi: nn.Module):
@@ -85,19 +85,12 @@ class GraphBenchProcessorLayer(nn.Module):
 # Encoder -> Processor -> mean pool -> Decoder
 # -------------------------
 class MLPGraphBench(nn.Module):
-    """
-    GraphBench connectivity-agnostic baseline in encoder-processor-decoder format.
-
-    Encoder: Linear(input_dim -> d)
-    Processor: L layers of Eq.3 blocks with φ = node-wise MLP (ignores edges)
-    Readout: global_mean_pool
-    Decoder: GraphBench decoder
-    """
+  
     def __init__(
         self,
         input_dim: int = 9,
         hidden_dim: int = 384,
-        num_layers: int = 4,   # match baseline depth
+        num_layers: int = 4,   
         out_dim: int = 1,
         decoder_bias: bool = True,
     ):
@@ -107,14 +100,12 @@ class MLPGraphBench(nn.Module):
         self.encoder = nn.Linear(input_dim, hidden_dim)
 
         # ---- Processor ----
-        # We keep φ as a node-wise MLP, and we stack num_layers processor blocks.
+        
         self.processor = nn.ModuleList([
             GraphBenchProcessorLayer(hidden_dim, phi=NodeWiseMLP(hidden_dim, hidden_dim, num_layers=1))
             for _ in range(num_layers)
         ])
-        # Note: using num_layers blocks, each with a 1-layer φ MLP,
-        # yields a total of 4 linear+ReLU applications across the processor,
-        # analogous to your original 4-layer node encoder.
+        
 
         # ---- Decoder ----
         self.decoder = GraphBenchDecoder(hidden_dim, out_dim=out_dim, bias=decoder_bias)

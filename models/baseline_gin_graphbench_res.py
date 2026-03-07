@@ -1,6 +1,3 @@
-# models/baseline_gin_graphbench.py
-# GraphBench "GIN" baseline implemented as a GINE-based processor
-# (no edge features for electronic circuits; no dropout)
 
 import torch
 import torch.nn as nn
@@ -29,7 +26,7 @@ class ProcessorFNN(nn.Module):
 
 
 # -------------------------
-# GraphBench task decoder (appendix)
+# GraphBench task decoder 
 # Decoder(x) = W2(LayerNorm(GELU(W1 x)))
 # -------------------------
 class Decoder(nn.Module):
@@ -60,7 +57,6 @@ class GINEPhi(nn.Module):
         )
         self.gine = GINEConv(nn=gine_nn, train_eps=train_eps, edge_dim=hidden_dim)
 
-        # "output ... forwarded to a two-layer MLP"
         self.post_mlp = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
@@ -68,7 +64,7 @@ class GINEPhi(nn.Module):
         )
 
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor, edge_attr=None) -> torch.Tensor:
-        # edge_attr is None for circuits; keep argument for interface consistency
+     
         h = self.gine(x, edge_index, edge_attr)
         h = self.post_mlp(h)
         return h
@@ -102,7 +98,7 @@ class GINGraphBench(nn.Module):
         self,
         in_channels: int,
         hidden_dim: int = 384,
-        num_layers: int = 4,   # circuits baseline commonly uses 4 layers
+        num_layers: int = 4,  
         out_dim: int = 1,
         train_eps: bool = False,
         decoder_bias: bool = True,
@@ -122,9 +118,8 @@ class GINGraphBench(nn.Module):
     def forward(self, data) -> torch.Tensor:
         x = data.x
         if x.dim() == 3 and x.size(1) == 1:
-            x = x.squeeze(1)  # [N,1,F] -> [N,F]
+            x = x.squeeze(1)  
 
-        # ensure dtype is compatible with Linear layers
         x = x.float()
 
         edge_index = data.edge_index

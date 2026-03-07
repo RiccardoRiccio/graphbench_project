@@ -1,17 +1,3 @@
-# models/gt_original.py
-# Standalone (unwrapped) Graph Transformer baseline for GraphBench electronic circuits
-# Paper-aligned choices for circuits:
-# - hidden_dim = 384
-# - num_layers = 6
-# - num_heads = 4
-# - activation = GELU
-# - dropout = 0
-# - graph-level readout via [cls] token
-# - optional absolute PE added before first GT layer (RWSE if provided)
-#
-# Note: The paper describes an additive attention bias B. GraphBench follows Bechler-Speicher et al. (2025),
-# but the exact B construction is not fully specified in the excerpt. This implementation provides a
-# reasonable "biased attention" mechanism using PE-derived per-head additive bias when pe_dim > 0.
 
 import math
 import torch
@@ -28,7 +14,7 @@ def _get_pe_from_data(data, pe_dim: int) -> torch.Tensor | None:
     if pe_dim <= 0:
         return None
 
-    # Common names people use for RWSE/LPE in PyG Data objects:
+
     for key in ["rwse", "pe", "pos_enc", "pe_rwse", "x_pe"]:
         if hasattr(data, key):
             pe = getattr(data, key)
@@ -77,30 +63,30 @@ class BiasedMultiheadSelfAttention(nn.Module):
 
     def forward(
         self,
-        x: torch.Tensor,                 # [B, L, D]
-        attn_bias: torch.Tensor,         # [B, H, L, L] (can be zeros)
-        key_padding_mask: torch.Tensor,  # [B, L] True where padding
+        x: torch.Tensor,               
+        attn_bias: torch.Tensor,         
+        key_padding_mask: torch.Tensor,  
     ) -> torch.Tensor:
         Bsz, L, D = x.shape
         H = self.num_heads
         Hd = self.head_dim
 
-        q = self.wq(x).view(Bsz, L, H, Hd).transpose(1, 2)  # [B, H, L, Hd]
-        k = self.wk(x).view(Bsz, L, H, Hd).transpose(1, 2)  # [B, H, L, Hd]
-        v = self.wv(x).view(Bsz, L, H, Hd).transpose(1, 2)  # [B, H, L, Hd]
+        q = self.wq(x).view(Bsz, L, H, Hd).transpose(1, 2)  
+        k = self.wk(x).view(Bsz, L, H, Hd).transpose(1, 2)  
+        v = self.wv(x).view(Bsz, L, H, Hd).transpose(1, 2)  
 
-        scores = torch.matmul(q, k.transpose(-1, -2)) / math.sqrt(Hd)  # [B, H, L, L]
+        scores = torch.matmul(q, k.transpose(-1, -2)) / math.sqrt(Hd)  
         scores = scores + attn_bias
 
-        # Mask padding keys (already applied in bias builder, but keep safe)
+       
         if key_padding_mask is not None:
             scores = scores.masked_fill(key_padding_mask[:, None, None, :], float("-inf"))
 
         attn = F.softmax(scores, dim=-1)
         attn = F.dropout(attn, p=self.dropout, training=self.training)
 
-        out = torch.matmul(attn, v)  # [B, H, L, Hd]
-        out = out.transpose(1, 2).contiguous().view(Bsz, L, D)  # [B, L, D]
+        out = torch.matmul(attn, v) 
+        out = out.transpose(1, 2).contiguous().view(Bsz, L, D)  
         out = self.wo(out)
         return out
 
@@ -151,19 +137,7 @@ class GTBlock(nn.Module):
 
 
 class GTGraphBench(nn.Module):
-    """
-    Unwrapped GT baseline for electronic circuits.
-
-    Expected usage from training loop (example):
-      pe_dim = RWSE_DIM if HAS_RWSE else 0
-      model = GToriginal(in_channels=input_dim, hidden_dim=384, num_layers=6, num_heads=4, out_dim=1, pe_dim=pe_dim)
-
-    Data requirements:
-      - data.x: [N, in_channels] (or [N,1,in_channels] also handled)
-      - data.edge_index: not used here (full attention across nodes per graph)
-      - data.batch: [N] graph ids
-      - optional PE: data.rwse or data.pe etc. with shape [N, pe_dim]
-    """
+    
     def __init__(
         self,
         in_channels: int,
@@ -174,7 +148,7 @@ class GTGraphBench(nn.Module):
         pe_dim: int = 0,
         dropout: float = 0.0,
         decoder_bias: bool = True,
-        ffn_mult: int = 1,   # keep 1 for a conservative match; set 4 if you want transformer-style wide FFN
+        ffn_mult: int = 1,   
     ):
         super().__init__()
         assert hidden_dim % num_heads == 0, "hidden_dim must be divisible by num_heads"
@@ -189,7 +163,7 @@ class GTGraphBench(nn.Module):
         # [cls] token for graph-level tasks
         self.cls_token = nn.Parameter(torch.zeros(1, 1, hidden_dim))
 
-        # Optional PE projection to model dimension for "add absolute PE before first GT layer"
+       
         self.pe_proj = nn.Linear(pe_dim, hidden_dim, bias=False) if pe_dim > 0 else None
 
        
@@ -214,13 +188,13 @@ class GTGraphBench(nn.Module):
         if batch is None:
             batch = x.new_zeros(x.size(0), dtype=torch.long)
 
-        # Dense batch: x_dense [B, L, F], mask [B, L] True for real nodes
-        x_dense, mask = to_dense_batch(x, batch=batch)  # mask True=valid
+        
+        x_dense, mask = to_dense_batch(x, batch=batch) 
         Bsz, L, _ = x_dense.shape
 
         h = self.node_encoder(x_dense)  # [B, L, D]
 
-        # Optional absolute PE added before first GT layer
+     
         if self.pe_dim > 0 and self.pe_proj is not None:
             pe = _get_pe_from_data(data, self.pe_dim)
             if pe is None:
@@ -234,15 +208,12 @@ class GTGraphBench(nn.Module):
         cls = self.cls_token.expand(Bsz, 1, -1)  # [B, 1, D]
         h = torch.cat([cls, h], dim=1)            # [B, 1+L, D]
 
-        # Update masks for padding: key_padding_mask True where padding
-        # mask is True for valid nodes; for cls it's always valid.
+        
         cls_mask = mask.new_ones((Bsz, 1))
         full_valid = torch.cat([cls_mask, mask], dim=1)          # [B, 1+L]
-        key_padding_mask = ~full_valid                           # True where padding
+        key_padding_mask = ~full_valid                           
 
-        # Build attention bias (zeros if pe_dim==0).
-        # For cls PE, use zeros.
-        # Paper-conservative choice: use zero additive attention bias B.
+        
         seq_len = h.size(1)  # includes [cls]
         attn_bias = h.new_zeros((Bsz, self.num_heads, seq_len, seq_len))    
         # Transformer blocks

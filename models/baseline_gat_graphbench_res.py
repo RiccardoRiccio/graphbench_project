@@ -37,7 +37,7 @@ class GraphBenchProcessorLayer(nn.Module):
         self.fnn = ProcessorFNN(hidden_dim)
 
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
-        # Eq.3 line 1 (with residual add made explicit)
+      
         h = self.phi(self.ln_phi(x), edge_index)
         h = F.relu(h)  # GraphBench uses ReLU after MPNN operator φ (e.g., GAT/GCN/GIN)
         x = x + h
@@ -106,7 +106,7 @@ class GATGraphBench(nn.Module):
 
         # ---- Processor ----
         for layer in self.processor_layers:
-            # Dropout is optional; if dropout=0 it does nothing.
+      
             x = F.dropout(x, p=self.dropout, training=self.training)
             x = layer(x, edge_index)
 

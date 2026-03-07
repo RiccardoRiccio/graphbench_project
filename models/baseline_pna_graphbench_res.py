@@ -40,7 +40,6 @@ class GraphBenchDecoder(nn.Module):
 
 # -------------------------
 # φ for PNA: (PNAConv -> BatchNorm -> ReLU)
-# We keep this exactly like your baseline, just packaged as a module.
 # -------------------------
 class PNAPhi(nn.Module):
     def __init__(self, conv: PNAConv, bn: BatchNorm):
@@ -125,7 +124,7 @@ class PNAGraphBench(nn.Module):
         for layer in self.processor_layers:
             x = layer(x, edge_index)
 
-        # ---- Readout (keep baseline: add pool) ----
+      
         hg = global_add_pool(x, batch)
 
         # ---- Decode ----
