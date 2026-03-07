@@ -1,0 +1,23 @@
+{
+  "dataset": "electronic_circuits_7_vout",
+  "model": "GPSoriginal",
+  "seed": 42,
+  "epochs": 700,
+  "batch_size": 512,
+  "lr": 0.001,
+  "hidden_dim": 384,
+  "best_val_rse": 1.3799184560775757,
+  "test_rse": 1.0551748275756836,
+  "train_sizes": {
+    "original": 907,
+    "after_filter": 907,
+    "used": 907
+  },
+  "removed_nan": {
+    "train": 0,
+    "valid": 0,
+    "test": 0
+  },
+  "duration_min": 1.29,
+  "pe_dim": 16
+}

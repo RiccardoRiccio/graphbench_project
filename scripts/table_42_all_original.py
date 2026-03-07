@@ -87,3 +87,26 @@ output_csv = os.path.join(ROOT, "summary_test_rse_42_all_originals.csv")
 df.to_csv(output_csv)
 
 print(f"\nTable saved to: {output_csv}")
+
+# ---- GENERATE LATEX TABLE ----
+
+latex_table = df.round(4).to_latex(
+    index=True,
+    caption="Test RSE results for baseline models on Electronic Circuits datasets.",
+    label="tab:baseline_results",
+    column_format="l" + "c"*len(df.columns),
+    escape=False
+)
+
+print("\n" + "="*80)
+print("LATEX TABLE")
+print("="*80)
+print(latex_table)
+print("="*80)
+
+# optionally save latex to file
+latex_path = os.path.join(ROOT, "summary_table.tex")
+with open(latex_path, "w") as f:
+    f.write(latex_table)
+
+print(f"\nLaTeX table saved to: {latex_path}")

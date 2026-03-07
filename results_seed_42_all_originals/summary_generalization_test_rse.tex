@@ -1,0 +1,15 @@
+\begin{table}
+\caption{Generalization test RSE. Each model is trained on 5-component circuits and evaluated on larger circuits of the same target type.}
+\label{tab:generalization_results}
+\begin{tabular}{lcccc}
+\toprule
+ & 5_eff→7_eff & 5_eff→10_eff & 5_vout→7_vout & 5_vout→10_vout \\
+\midrule
+PNAOriginal & 0.853700 & 2.197600 & 3.078200 & 53.534200 \\
+GPSoriginal & 1.095300 & 4.896900 & 2.004000 & 27.244300 \\
+GCNoriginal & 0.622700 & 0.811000 & 0.718100 & 0.918100 \\
+GINoriginal & 0.564200 & 0.749800 & 0.645900 & 0.621600 \\
+GToriginal & NaN & NaN & NaN & NaN \\
+\bottomrule
+\end{tabular}
+\end{table}
