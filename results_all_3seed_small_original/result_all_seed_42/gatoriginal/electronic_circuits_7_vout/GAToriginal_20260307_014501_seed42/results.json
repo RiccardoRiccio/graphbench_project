@@ -1,0 +1,23 @@
+{
+  "dataset": "electronic_circuits_7_vout",
+  "model": "GAToriginal",
+  "seed": 42,
+  "epochs": 700,
+  "batch_size": 512,
+  "lr": 0.001,
+  "hidden_dim": 384,
+  "best_val_rse": 0.7583845853805542,
+  "test_rse": 0.8021734356880188,
+  "train_sizes": {
+    "original": 907,
+    "after_filter": 907,
+    "used": 907
+  },
+  "removed_nan": {
+    "train": 0,
+    "valid": 0,
+    "test": 0
+  },
+  "duration_min": 0.69,
+  "pe_dim": 0
+}
