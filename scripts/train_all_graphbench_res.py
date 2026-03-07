@@ -63,7 +63,7 @@ class FilteredDataset(torch.utils.data.Dataset):
         self.transform = transform
         self.idx = []
         self.bad = 0
-        self.cache = {}  # key: base dataset index -> cached pe tensor on CPU
+        self.cache = {}  #
 
         for i in range(len(base_ds)):
             y = getattr(base_ds[i], "y", None)
@@ -78,15 +78,15 @@ class FilteredDataset(torch.utils.data.Dataset):
         return len(self.idx)
 
     def __getitem__(self, i):
-        base_i = self.idx[i]               # stable identity in underlying dataset
+        base_i = self.idx[i]             
         data = self.base[base_i]
 
         if self.transform is not None:
             if base_i not in self.cache:
-                data = self.transform(data)           # adds data.pe
-                self.cache[base_i] = data.pe.cpu()    # cache PE on CPU
+                data = self.transform(data)           
+                self.cache[base_i] = data.pe.cpu()    
             else:
-                data.pe = self.cache[base_i]          # restored; batch.to(device) will move it
+                data.pe = self.cache[base_i]          
 
         return data
 
@@ -116,10 +116,7 @@ def compute_deg(dataset):
     return deg
 
 def build_model(model_key: str, input_dim: int, hidden_dim: int, deg=None):
-    """
-    Instantiate a model. Adjust kwargs if your class signatures differ.
-    IMPORTANT: make sure each model returns shape [B], e.g. by .squeeze(-1) in forward().
-    """
+    
     if model_key == "GAToriginal":
         return GAToriginal(
             in_channels=input_dim,
@@ -259,12 +256,12 @@ def run(model_key: str, dataset_name: str):
     # ---- Config ----
    
     root          = "./graphbench_data"
-    epochs        = 700        # change to 700 for full run
+    epochs        = 700        
     batch_size    = 512
     lr            = 1e-3
     hidden_dim    = 384
     model_name = model_key
-    # save_dir      = f"./results/{dataset_name}"
+
     timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
     master_folder = f"./results_seed_{SEED}_all_graphbench_res_and_gatoriginal"
     results_root = f"{master_folder}/results_{SEED}_{model_key.lower()}"
@@ -311,7 +308,7 @@ def run(model_key: str, dataset_name: str):
 
     # ---- Train ----
     best_val_rse = float("inf")
-    log = []   # list of dicts, one per epoch
+    log = []  
 
     for epoch in range(1, epochs + 1):
         model.train()

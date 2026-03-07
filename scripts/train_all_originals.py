@@ -56,7 +56,7 @@ class FilteredDataset(torch.utils.data.Dataset):
         self.transform = transform
         self.idx = []
         self.bad = 0
-        self.cache = {}  # key: base dataset index -> cached pe tensor on CPU
+        self.cache = {} 
 
         for i in range(len(base_ds)):
             y = getattr(base_ds[i], "y", None)
@@ -71,15 +71,15 @@ class FilteredDataset(torch.utils.data.Dataset):
         return len(self.idx)
 
     def __getitem__(self, i):
-        base_i = self.idx[i]               # stable identity in underlying dataset
+        base_i = self.idx[i]               
         data = self.base[base_i]
 
         if self.transform is not None:
             if base_i not in self.cache:
-                data = self.transform(data)           # adds data.pe
-                self.cache[base_i] = data.pe.cpu()    # cache PE on CPU
+                data = self.transform(data)           
+                self.cache[base_i] = data.pe.cpu()  
             else:
-                data.pe = self.cache[base_i]          # restored; batch.to(device) will move it
+                data.pe = self.cache[base_i]          
 
         return data
 
@@ -182,7 +182,7 @@ def run(model_key: str, dataset_name: str):
     # ---- Config ----
    
     root          = "./graphbench_data"
-    epochs        = 700        # change to 700 for full run
+    epochs        = 700       
     batch_size    = 512
     lr            = 1e-3
     hidden_dim    = 384
@@ -234,7 +234,7 @@ def run(model_key: str, dataset_name: str):
 
     # ---- Train ----
     best_val_rse = float("inf")
-    log = []   # list of dicts, one per epoch
+    log = []  
 
     for epoch in range(1, epochs + 1):
         model.train()
