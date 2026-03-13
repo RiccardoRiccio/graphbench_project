@@ -41,7 +41,7 @@ try:
     HAS_RWSE = True
 except ImportError:
     HAS_RWSE = False
-    print("WARNING: AddRandomWalkPE not found in your PyG version. GT will run without RWSE.")
+    print("AddRandomWalkPE not found ")
 
 
 # ---- RWSE config (GT only) ----
@@ -363,9 +363,9 @@ def run(model_key: str, dataset_name: str):
         "best_val_rse":  best_val_rse,
         "test_rse":      test_rse,
         "train_sizes": {
-            "original":    len(splits["train"]),              # 234093
-            "after_filter": len(splits["train"]) - train_bad, # 234084
-            "used":        len(train_ds),                     # 73000 (or 234084 if not subsampled)
+            "original":    len(splits["train"]),
+            "after_filter": len(splits["train"]) - train_bad,
+            "used":        len(train_ds),
         },
         "removed_nan": {
             "train": train_bad,
